@@ -41,6 +41,15 @@ CREATE TABLE click_logs (
     clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ตาราง data เอาไว้ดู cloudfare
+CREATE TABLE data (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL
+);
+
+INSERT INTO data (content) VALUES ('Sample data 1');
+INSERT INTO data (content) VALUES ('Sample data 2');
+
 INSERT INTO hotels (name, location, price_per_night, thumbnail_url, detail_url) VALUES
 ('Centurion Hotel Ueno', 'Ueno, Tokyo', 4500, 'https://example.com/thumbnails/centurion.jpg', 'https://example.com/details/centurion-ueno'),
 ('APA Hotel Keisei Ueno-Ekimae', 'Ueno, Tokyo', 3800, 'https://example.com/thumbnails/apa-ueno.jpg', 'https://example.com/details/apa-ueno-ekimae'),
