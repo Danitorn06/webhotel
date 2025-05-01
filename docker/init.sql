@@ -1,63 +1,85 @@
-CREATE TABLE clients (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+CREATE TABLE IF NOT EXISTS hotels (
+    hotel_id SERIAL PRIMARY KEY,
+    hotel_name VARCHAR(255) NOT NULL,
+    hotel_type VARCHAR(100) NOT NULL,
+    hotel_location TEXT NOT NULL
+);
+
+-- ตารางข้อเสนอห้องพัก
+CREATE TABLE IF NOT EXISTS hotel_offers (
+    offer_id SERIAL PRIMARY KEY,
+    offer_name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    room_type VARCHAR(100) NOT NULL,
+    stay_duration INT NOT NULL,
+    available_date DATE NOT NULL,
+    room_price DECIMAL(10, 2) NOT NULL,
+    offer_level VARCHAR(50) NOT NULL,
+    hotel_url TEXT NOT NULL,
+    hotel_id INT NOT NULL,
+    FOREIGN KEY (hotel_id) REFERENCES hotels(hotel_id)
+);
+
+-- ตาราง Affiliators (ลดเหลือแค่ name + api_key)
+CREATE TABLE IF NOT EXISTS affiliators (
+    affiliator_id SERIAL PRIMARY KEY,
+    affiliator_name VARCHAR(255) NOT NULL,
     api_key TEXT UNIQUE NOT NULL
 );
 
--- ตารางเว็บไซต์ที่ Affiliator ลงทะเบียน
-CREATE TABLE affiliator_websites (
-    id SERIAL PRIMARY KEY,
-    affiliator_id INT NOT NULL REFERENCES clients(id),
-    website_url TEXT NOT NULL
+-- ตารางเว็บไซต์ที่ลงทะเบียนโดย affiliator
+CREATE TABLE IF NOT EXISTS referrer_websites (
+    referrer_id SERIAL PRIMARY KEY,
+    affiliator_id INT NOT NULL,
+    website_url TEXT,
+    FOREIGN KEY (affiliator_id) REFERENCES affiliators(affiliator_id)
 );
 
--- ตารางโรงแรม
-CREATE TABLE hotels (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    location TEXT NOT NULL,
-    price_per_night INT NOT NULL,
-    thumbnail_url TEXT,
-    detail_url TEXT
+-- ตารางการคลิก (click log)
+CREATE TABLE IF NOT EXISTS click_logs (
+    click_id SERIAL PRIMARY KEY,
+    offer_id INT NOT NULL,
+    hotel_id INT NOT NULL,
+    clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    referrer_url TEXT,
+    FOREIGN KEY (offer_id) REFERENCES hotel_offers(offer_id),
+    FOREIGN KEY (hotel_id) REFERENCES hotels(hotel_id)
 );
 
--- ตาราง Log การ Request
-CREATE TABLE request_logs (
-    id SERIAL PRIMARY KEY,
-    affiliator_id INT NOT NULL REFERENCES clients(id),
+-- ตาราง request log จาก affiliator
+CREATE TABLE IF NOT EXISTS request_logs (
+    request_id SERIAL PRIMARY KEY,
+    affiliator_id INT NOT NULL,
+    request_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     endpoint TEXT NOT NULL,
     method TEXT NOT NULL,
-    parameters TEXT,
-    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    path_parameters TEXT,
+    query_parameters TEXT,
+    FOREIGN KEY (affiliator_id) REFERENCES affiliators(affiliator_id)
 );
 
--- ตาราง Log การ Click
-CREATE TABLE click_logs (
-    id SERIAL PRIMARY KEY,
-    affiliator_id INT NOT NULL REFERENCES clients(id),
-    item_clicked TEXT NOT NULL,
-    referrer_url TEXT NOT NULL,
-    clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- ตัวอย่างข้อมูลโรงแรม
+INSERT INTO hotels (hotel_name, hotel_type, hotel_location) VALUES 
+('The Berkeley Hotel Pratunam', 'โรงแรมหรู', '559 Ratchaprarop Rd, Makkasan, Bangkok'),
+('Asia Hotel Bangkok', 'โรงแรมใจกลางเมือง', '296 Phayathai Road, Bangkok'),
+('Baiyoke Sky Hotel', 'โรงแรมสูงที่สุดในไทย', '222 Ratchaprarop Rd, Bangkok');
 
--- ตาราง data เอาไว้ดู cloudfare
-CREATE TABLE data (
-    id SERIAL PRIMARY KEY,
-    content TEXT NOT NULL
-);
+-- ตัวอย่างข้อมูลข้อเสนอห้องพัก
+INSERT INTO hotel_offers (offer_name, description, room_type, stay_duration, available_date, room_price, offer_level, hotel_url, hotel_id) VALUES 
+('Superior Room - Berkeley', 
+ 'ห้องพักขนาดใหญ่พร้อมสิ่งอำนวยความสะดวกครบครัน ตั้งอยู่ใจกลางประตูน้ำ ใกล้แหล่งช้อปปิ้ง', 
+ 'Superior', 2, '2025-05-05', 2400.00, 'ปานกลาง', 
+ 'https://www.agoda.com/the-berkeley-hotel-pratunam/hotel/bangkok-th.html', 
+ (SELECT hotel_id FROM hotels WHERE hotel_name = 'The Berkeley Hotel Pratunam' LIMIT 1)),
 
-INSERT INTO data (content) VALUES ('Sample data 1');
-INSERT INTO data (content) VALUES ('Sample data 2');
+('Deluxe Room - Asia Hotel', 
+ 'ห้องพักในทำเลเยี่ยม ติดรถไฟฟ้าราชเทวี เหมาะสำหรับนักท่องเที่ยวและนักธุรกิจ', 
+ 'Deluxe', 2, '2025-05-07', 1900.00, 'ง่าย', 
+ 'https://www.agoda.com/asia-hotel-bangkok/hotel/bangkok-th.html', 
+ (SELECT hotel_id FROM hotels WHERE hotel_name = 'Asia Hotel Bangkok' LIMIT 1)),
 
-INSERT INTO hotels (name, location, price_per_night, thumbnail_url, detail_url) VALUES
-('Centurion Hotel Ueno', 'Ueno, Tokyo', 4500, 'https://example.com/thumbnails/centurion.jpg', 'https://example.com/details/centurion-ueno'),
-('APA Hotel Keisei Ueno-Ekimae', 'Ueno, Tokyo', 3800, 'https://example.com/thumbnails/apa-ueno.jpg', 'https://example.com/details/apa-ueno-ekimae'),
-('Hotel Sardonyx Ueno', 'Ueno, Tokyo', 5200, 'https://example.com/thumbnails/sardonyx.jpg', 'https://example.com/details/sardonyx-ueno'),
-('Mitsui Garden Hotel Ueno', 'Ueno, Tokyo', 6000, 'https://example.com/thumbnails/mitsui.jpg', 'https://example.com/details/mitsui-ueno'),
-('Dormy Inn Akihabara', 'Akihabara, Tokyo', 4900, 'https://example.com/thumbnails/dormy.jpg', 'https://example.com/details/dormy-akihabara'),
-('The B Akasaka', 'Akasaka, Tokyo', 5500, 'https://example.com/thumbnails/theb-akasaka.jpg', 'https://example.com/details/theb-akasaka'),
-('Shinjuku Granbell Hotel', 'Shinjuku, Tokyo', 7100, 'https://example.com/thumbnails/granbell.jpg', 'https://example.com/details/granbell-shinjuku'),
-('APA Hotel Shinjuku Kabukicho Tower', 'Shinjuku, Tokyo', 6800, 'https://example.com/thumbnails/apa-shinjuku.jpg', 'https://example.com/details/apa-shinjuku'),
-('Hotel Sunroute Plaza Shinjuku', 'Shinjuku, Tokyo', 7500, 'https://example.com/thumbnails/sunroute.jpg', 'https://example.com/details/sunroute-plaza'),
-('Tokyo Dome Hotel', 'Bunkyo, Tokyo', 8000, 'https://example.com/thumbnails/tokyodome.jpg', 'https://example.com/details/tokyo-dome-hotel');
+('Sky Zone Suite - Baiyoke Sky', 
+ 'ห้องพักบนชั้นสูงของโรงแรม ชมวิวเมืองแบบพาโนรามา พร้อมบุฟเฟต์อาหารเช้าชั้นยอด', 
+ 'Suite', 1, '2025-05-10', 3000.00, 'สูง', 
+ 'https://www.agoda.com/baiyoke-sky-hotel/hotel/bangkok-th.html', 
+ (SELECT hotel_id FROM hotels WHERE hotel_name = 'Baiyoke Sky Hotel' LIMIT 1));
